@@ -1,0 +1,31 @@
+from flask import Flask, request, jsonify
+from moviepy.editor import VideoFileClip
+from googletrans import Translator
+
+app = Flask(__name__)
+
+@app.route('/translate-audio', methods=['POST'])
+def translate_audio():
+    try:
+        video_file = request.files['video']
+        
+        if not video_file:
+            return jsonify({'error': 'No video file uploaded'}), 400
+        
+        # Save the video temporarily
+        video_file.ssave('temp_video.mp4')
+        
+        # Extract audio from the video
+        video_clip = VideoFileClip('temp_video.mp4')
+        audio = video_clip.audio
+        
+        # Translate the audio
+        translator = Translator()
+        translated_text = translator.translate(audio.to_soundarray().mean(axis=1).tobytes(), src='en', dest='fr').text
+        
+        return jsonify({'translatedText': translated_text})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
